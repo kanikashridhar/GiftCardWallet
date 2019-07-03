@@ -1,0 +1,67 @@
+from django.contrib.auth.forms import UserCreationForm
+from django.urls import reverse_lazy
+from django.views import generic
+from rest_framework import generics
+from .models import Card,Product
+from .serializers import ProductSerializer,CardSerializer
+
+from rest_framework.views import APIView
+from rest_framework.response import Response
+
+class SignUp(generic.CreateView):
+    form_class = UserCreationForm
+    success_url = reverse_lazy('login')
+    template_name = 'signup.html'
+
+
+class CardView(APIView):
+    """
+    API endpoint that allows cards to be viewed or edited.
+    """
+
+    def get(self,request):
+        cards = Card.objects.filter(User=request.user)
+        serializer = CardSerializer(cards, many=True)
+        return Response({"Cards Details": serializer.data})
+    
+    def post(self, request):
+        card = request.data.get('card')
+
+        # Create an article from the above data
+        serializer = CardSerializer(data=card)
+        if serializer.is_valid(raise_exception=True):
+            card_saved = serializer.save()
+        return Response({"success": "Card created successfully"})
+
+
+
+class CardsView(generics.ListCreateAPIView):
+    """
+    API endpoint that allows cards to be viewed or edited.
+    """
+    queryset = Card.objects.all()
+    serializer_class = CardSerializer
+
+    def get_queryset(self):
+        user = self.request.user
+        return Card.objects.filter(User=user)
+  
+    def list(self, request):
+        queryset = self.get_queryset()
+        serializer = CardSerializer(queryset, many=True)
+        return Response(serializer.data)
+
+class SingleCardView(generics.RetrieveUpdateAPIView):
+    """
+    API endpoint that allows single card to be viewed or edited.
+    """
+    queryset = Card.objects.all()
+    serializer_class = CardSerializer
+
+
+class ProductsListView(generics.ListCreateAPIView):
+    """
+    API endpoint that allows products to be viewed or edited.
+    """
+    queryset = Product.objects.all()
+    serializer_class = ProductSerializer
